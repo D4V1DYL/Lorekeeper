@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Uji koneksi & kualitas Dungeon Master dengan Nemotron asli.
-// Pakai:  npm run dm:check            (bahasa Indonesia)
-//         npm run dm:check -- en      (bahasa Inggris)
+// Pakai:  npm run dm:check                 (bahasa Indonesia, gaya Kocak)
+//         npm run dm:check -- en           (bahasa Inggris)
+//         npm run dm:check -- id serius    (gaya: seimbang|kocak|petualang|epik|serius|horor|misteri|santai)
 // Membaca .env di folder proyek. Tidak mengubah data game apa pun.
 
 import fs from 'node:fs';
@@ -20,9 +21,10 @@ const { buildCharacter } = await import('../lib/data.js');
 const { buildMessages, dmStatus, parseDM, streamDM } = await import('../lib/dm.js');
 
 const lang = process.argv[2] === 'en' ? 'en' : 'id';
+const style = ['seimbang', 'kocak', 'petualang', 'epik', 'serius', 'horor', 'misteri', 'santai'].includes(process.argv[3]) ? process.argv[3] : 'kocak';
 const status = dmStatus();
 const ok = (b) => (b ? '✅' : '❌');
-console.log(`\nLorekeeper DM check · model: ${status.model} · bahasa: ${lang}`);
+console.log(`\nLorekeeper DM check · model: ${status.model} · bahasa: ${lang} · gaya: ${style}`);
 if (status.mock) {
   console.log('❌ NVIDIA_API_KEY kosong. Isi di .env lalu jalankan lagi.\n');
   process.exit(1);
@@ -45,7 +47,7 @@ try {
 const mk = (id, name, classId, raceId) => ({ id, name, connected: true, character: buildCharacter({ name, classId, raceId, backstory: 'Pengembara yang mencari adiknya.' }) });
 const room = {
   code: 'TEST',
-  settings: { campaign: 'kabut', premise: '', language: lang },
+  settings: { campaign: 'kabut', premise: '', language: lang, dmStyle: style },
   players: [mk('p1', 'Aldric', 'fighter', 'dwarf'), mk('p2', 'Lyra', 'wizard', 'elf')],
   log: [],
   enemies: [{ id: 'e1', name: 'Goblin A', type: 'goblin', hp: 7, maxHp: 7 }, { id: 'e2', name: 'Goblin B', type: 'goblin', hp: 7, maxHp: 7 }],

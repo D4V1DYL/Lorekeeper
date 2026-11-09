@@ -13,5 +13,16 @@ services:
     volumes:
       - lorekeeper-data:/app/data   # room & progres tersimpan di sini
 
+  # Narasi suara natural (opsional). Jalankan dengan: docker compose --profile voice up -d --build
+  # lalu isi PIPER_URL=http://tts:5000 di .env. Butuh ±1 GB disk, ±300 MB RAM, CPU biasa sudah cukup.
+  tts:
+    build: ./tts
+    image: lorekeeper-tts:latest
+    container_name: lorekeeper-tts
+    restart: unless-stopped
+    profiles: ["voice"]
+    expose:
+      - "5000"
+
 volumes:
   lorekeeper-data:

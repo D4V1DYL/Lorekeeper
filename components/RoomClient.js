@@ -91,7 +91,8 @@ export default function RoomClient({ code }) {
   const isHost = room.hostId === me.id;
 
   let view;
-  if (!me.character || (editChar && room.phase === 'lobby')) {
+  const isDM = room.dmId === me.id;
+  if ((!me.character && !isDM) || (editChar && room.phase === 'lobby')) {
     view = <CharacterCreator me={me} room={room} onDone={() => setEditChar(false)} />;
   } else if (room.phase === 'lobby') {
     view = <Lobby room={room} me={me} isHost={isHost} onEditChar={() => setEditChar(true)} />;

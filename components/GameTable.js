@@ -3,17 +3,23 @@ import { AnimatePresence, motion } from 'motion/react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { BookOpen, Download, HeartPulse, Menu, Music, Printer, ScrollText, Store, Volume2, Backpack, Check, ChevronDown, ChevronUp, Coins, Crown, Dices, EyeOff, FastForward, Feather, FlaskConical, Gauge, Map as MapIcon, MessageCircle, MessagesSquare, RotateCcw, Send, Shield, ShieldPlus, Skull, Star, Swords, Target, Timer, Users, WifiOff, X } from 'lucide-react';
+import { Signpost, HandHeart, Headphones, BookOpen, Download, HeartPulse, Menu, Music, Printer, ScrollText, Store, Volume2, Backpack, Check, ChevronDown, ChevronUp, Coins, Crown, Dices, EyeOff, FastForward, Feather, FlaskConical, Gauge, Map as MapIcon, MessageCircle, MessagesSquare, RotateCcw, Send, Shield, ShieldPlus, Skull, Star, Swords, Target, Timer, Users, WifiOff, X } from 'lucide-react';
 import StoryLog from './StoryLog';
 import ChatPanel from './ChatPanel';
 import MapPanel from './MapPanel';
 import LangToggle from './LangToggle';
 import ShopPanel from './ShopPanel';
+import DmConsole from './DmConsole';
+import WorldPanel from './WorldPanel';
+import { DmModePicker } from './DmStylePicker';
+import DmStylePicker from './DmStylePicker';
 import HostControls from './HostControls';
 import Tutorial, { tutorialSeen } from './Tutorial';
 import { downloadStory, printStory } from '@/lib/exportStory';
 import { getSoundPrefs, onSoundPrefs, setSoundPrefs } from '@/lib/sound';
 import { useLang } from '@/lib/lang';
+import { useNarrator } from '@/lib/useNarrator';
+import { hasServerTts, setVoicePrefs, stopSpeaking, ttsSupported, voicesFor } from '@/lib/voice';
 import D20 from './D20';
 import { Sigil } from './ClassIcon';
 import { CLASSES, ENEMY_TYPES, ITEMS, LEVEL_XP, MAX_LEVEL, QUESTS, RACES, STATS, effectiveAC, fmtMod, skillSummary, skillsFor, totalMod } from '@/lib/data';
@@ -33,6 +39,9 @@ export default function GameTable({ room, me, isHost }) {
   const [showTut, setShowTut] = useState(false);
   const [menu, setMenu] = useState(false);
   const { T, D, lang } = useLang();
+  const voice = useNarrator(room);
+  const isDM = room.dmId === me.id;
+  const dmPlayer = room.players.find((p) => p.id === room.dmId);
   useEffect(() => {
     if (!tutorialSeen()) setShowTut(true);
   }, []);
@@ -58,8 +67,16 @@ export default function GameTable({ room, me, isHost }) {
   // target default: musuh pertama untuk skill ofensif, diri sendiri untuk skill sekutu
   useEffect(() => {
     if (!skill) return;
-    if (skill.ally) {
-      if (!room.players.some((p) => p.id === targetId && p.character)) setTargetId(me.id);
+    if (skill.id === 'aid') {
+      const others = room.players.filter((p) => p.character && p.id !== me.id);
+      if (!others.some((p) => p.id === targetId)) setTargetId((others.find((p) => p.character.hp <= 0 && !p.character.death?.dead) || others[0])?.id || null);
+    } else if (skill.ally) {
+      if (!room.players.some((p) => p.id === targetId && p.character)) {
+        // skill penyembuh: otomatis arahkan ke teman yang paling terluka
+        const alive = room.players.filter((p) => p.character && !p.character.death?.dead);
+        const worst = skill.heal ? alive.sort((a, b) => a.character.hp / a.character.maxHp - b.character.hp / b.character.maxHp)[0] : null;
+        setTargetId(worst && worst.character.hp < worst.character.maxHp ? worst.id : me.id);
+      }
     } else if (!aliveEnemies.some((e) => e.id === targetId)) setTargetId(aliveEnemies[0]?.id || null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [skillId, room.enemies]);
@@ -69,7 +86,12 @@ export default function GameTable({ room, me, isHost }) {
     if (side === 'enemy') {
       if (!skill || skill.ally) setSkillId('basic');
       setTargetId(id);
-    } else if (skill?.ally) setTargetId(id);
+    } else if (skill?.ally && !(skill.id === 'aid' && id === me.id)) setTargetId(id);
+    else if (id !== me.id) {
+      // klik teman di panggung: langsung pilih "Bantu Teman" untuknya
+      setSkillId('aid');
+      setTargetId(id);
+    }
   };
   const pick = { mySkills, skill, setSkillId, targetId, setTargetId, aliveEnemies };
 
@@ -94,12 +116,22 @@ export default function GameTable({ room, me, isHost }) {
                 <b className="text-parch">{D.areaName(area.id, area.name)}</b> · {ast.bossDefeated ? T('game.conquered') : T('game.toBoss', { n: Math.min(ast.cleared || 0, area.bossAfter), m: area.bossAfter })} ·{' '}
               </>
             )}
-            Room <b className="tracking-widest text-parch">{room.code}</b> · {T('game.round', { n: room.round })} · DM: {room.dm.mock ? T('game.dmDemo') : room.dm.model.split('/').pop()}
+            Room <b className="tracking-widest text-parch">{room.code}</b> · {T('game.round', { n: room.round })} · DM:{' '}
+            {dmPlayer ? (
+              <span className={dmPlayer.connected ? '' : 'text-blood'}>
+                {dmPlayer.name} ({T(`dmMode.short.${room.settings.dmMode}`)}){dmPlayer.connected ? '' : ` · ${T('dmMode.offline')}`}
+              </span>
+            ) : room.dm.mock ? (
+              T('game.dmDemo')
+            ) : (
+              room.dm.model.split('/').pop()
+            )}
           </p>
         </div>
-        <button onClick={() => setShowShop(true)} className="flex items-center gap-1.5 rounded-full border border-gold/25 px-3 py-1.5 text-sm text-gold" title={T('shop.title')}>
+        <VoiceToggle on={voice.auto} />
+        {!isDM && <button onClick={() => setShowShop(true)} className="flex items-center gap-1.5 rounded-full border border-gold/25 px-3 py-1.5 text-sm text-gold" title={T('shop.title')}>
           <Store size={15} /> <span className="hidden sm:inline">{T('game.shop')}</span>
-        </button>
+        </button>}
         <button onClick={() => setShowMap(true)} className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-sm text-gold" title={T('map.title')}>
           <MapIcon size={15} /> <span className="hidden sm:inline">{T('game.map')}</span>
           {Object.keys(room.votes || {}).length > 0 && <span className="rounded-full bg-ember px-1.5 text-[10px] font-bold text-ink">{Object.keys(room.votes).length}</span>}
@@ -117,6 +149,8 @@ export default function GameTable({ room, me, isHost }) {
           showStage={showStage}
           toggleStage={() => setShowStage((v) => !v)}
           openTutorial={() => setShowTut(true)}
+          voice={voice}
+          meId={me.id}
         />
         <button
           onClick={() => {
@@ -147,9 +181,17 @@ export default function GameTable({ room, me, isHost }) {
             </div>
           </div>
           <div className="min-h-0 flex-1">
-            <StoryLog log={room.log} players={room.players} />
+            <StoryLog log={room.log} players={room.players} lang={room.settings.language} />
           </div>
-          <ActionBar room={room} me={me} isHost={isHost} pick={pick} />
+          {isDM ? (
+            <footer className="shrink-0 border-t border-gold/10 bg-coal/85 px-3 py-3 sm:px-5">
+              <div className="mx-auto max-w-4xl">
+                <DmConsole room={room} me={me} isHost={isHost} />
+              </div>
+            </footer>
+          ) : (
+            <ActionBar room={room} me={me} isHost={isHost} pick={pick} />
+          )}
         </section>
 
         <aside className="hidden w-80 shrink-0 flex-col border-l border-gold/10 bg-coal/60 lg:flex">
@@ -202,6 +244,15 @@ function PartyPanel({ room, me }) {
       <h2 className="font-display text-sm font-bold tracking-[0.25em] text-parch-dim uppercase">{tr('party.title')}</h2>
       {room.players.map((p) => {
         const c = p.character;
+        if (!c && p.id === room.dmId)
+          return (
+            <div key={p.id} className="flex items-center gap-2 rounded-xl border border-arcane/30 bg-arcane/5 p-3 text-sm">
+              <Feather size={16} className="text-arcane" />
+              <span className="font-display font-bold">{p.name}</span>
+              <span className="text-xs text-parch-dim">· {tr('party.dm')}</span>
+              {!p.connected && <WifiOff size={12} className="text-blood" />}
+            </div>
+          );
         if (!c)
           return (
             <div key={p.id} className="rounded-xl border border-dashed border-gold/20 p-3 text-sm text-parch-dim">
@@ -225,6 +276,7 @@ function PartyPanel({ room, me }) {
                 <p className="truncate text-[11px] text-parch-dim">
                   Lv {c.level} · {D.race(c.raceId, RACES[c.raceId].label)} {CLASSES[c.classId].label}
                 </p>
+                {c.titles?.length > 0 && <p className="truncate text-[10px] text-gold italic">“{c.titles.at(-1)}”</p>}
               </div>
               <HostControls room={room} me={me} player={p} />
               <div className="flex items-center gap-1 text-sm text-gold" title="Armor Class">
@@ -266,6 +318,11 @@ function PartyPanel({ room, me }) {
                 {c.status?.shield > 0 && (
                   <span className="flex items-center gap-0.5 rounded-full bg-gold/10 px-1.5 text-gold">
                     <ShieldPlus size={10} /> {tr('party.shield', { n: c.status.shield })}
+                  </span>
+                )}
+                {c.status?.aid > 0 && (
+                  <span className="flex items-center gap-0.5 rounded-full bg-moss/15 px-1.5 text-moss">
+                    <HandHeart size={10} /> {tr('party.aid')}
                   </span>
                 )}
                 {c.status?.hidden > 0 && (
@@ -334,6 +391,7 @@ function PartyPanel({ room, me }) {
         </div>
       )}
       <QuestList room={room} />
+      <WorldPanel room={room} />
       {room.summary && (
         <div className="rounded-xl border border-gold/10 bg-ink/40 p-3">
           <p className="text-[10px] font-semibold tracking-widest text-parch-dim uppercase">{tr('party.story')}</p>
@@ -380,7 +438,91 @@ function QuestList({ room }) {
   );
 }
 
-function MoreMenu({ open, setOpen, room, lang, lowPower, toggleLow, showStage, toggleStage, openTutorial }) {
+function VoiceToggle({ on }) {
+  const { T } = useLang();
+  const [ok, setOk] = useState(false);
+  useEffect(() => setOk(ttsSupported()), []);
+  if (!ok) return null;
+  return (
+    <button
+      onClick={() => setVoicePrefs({ auto: !on })}
+      aria-pressed={on}
+      title={T('voice.tip')}
+      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm ${on ? 'border-ember/60 bg-ember/15 text-ember' : 'border-gold/25 text-parch-dim'}`}
+    >
+      <Headphones size={15} /> <span className="hidden sm:inline">{on ? T('voice.on') : T('voice.off')}</span>
+    </button>
+  );
+}
+
+function VoiceSettings({ voice, room }) {
+  const { T } = useLang();
+  const nl = room.settings.language === 'en' ? 'en' : 'id';
+  const [list, setList] = useState([]);
+  useEffect(() => {
+    if (!ttsSupported()) return;
+    const load = () => setList(voicesFor(nl).map((v) => ({ uri: v.voiceURI, name: v.name })));
+    load();
+    speechSynthesis.addEventListener?.('voiceschanged', load);
+    return () => speechSynthesis.removeEventListener?.('voiceschanged', load);
+  }, [nl]);
+  if (!ttsSupported()) return <p className="px-3 py-1.5 text-xs text-parch-dim">{T('voice.unsupported')}</p>;
+  return (
+    <div className="space-y-1.5 px-3 py-1.5 text-sm">
+      <label className="flex items-center gap-2.5">
+        <Headphones size={15} className="shrink-0 text-gold" />
+        <span className="flex-1 text-parch-dim">{T('voice.auto')}</span>
+        <input type="checkbox" checked={voice.auto} onChange={(e) => setVoicePrefs({ auto: e.target.checked })} className="h-4 w-4 accent-[#f08a3c]" />
+      </label>
+      {room.dm?.tts && (
+        <div className="flex items-center gap-1.5 pl-6 text-xs">
+          <span className="mr-1 text-parch-dim">{T('voice.engine')}</span>
+          {[
+            ['auto', T('voice.server')],
+            ['device', T('voice.device')],
+          ].map(([v, l]) => (
+            <button
+              key={v}
+              onClick={() => {
+                stopSpeaking();
+                setVoicePrefs({ engine: v });
+              }}
+              className={`whitespace-nowrap rounded-full border px-2 py-0.5 ${(voice.engine || 'auto') === v ? 'border-ember text-ember' : 'border-gold/20 text-parch-dim'}`}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+      )}
+      <label className="flex items-center gap-2.5">
+        <span className="w-[4.6rem] shrink-0 pl-6 text-xs text-parch-dim">{T('voice.rate')}</span>
+        <input type="range" min={0.7} max={1.5} step={0.05} value={voice.rate} onChange={(e) => setVoicePrefs({ rate: +e.target.value })} className="w-full accent-[#f08a3c]" />
+        <span className="w-8 text-right text-xs text-parch-dim">{voice.rate.toFixed(2)}×</span>
+      </label>
+      {room.dm?.tts && voice.engine !== 'device' ? null : list.length > 0 ? (
+        <select
+          value={voice.voice[nl] || list[0].uri}
+          onChange={(e) => {
+            stopSpeaking();
+            setVoicePrefs({ voice: { [nl]: e.target.value } });
+          }}
+          className="w-full rounded-lg border border-gold/20 bg-ink px-2 py-1.5 text-xs text-parch outline-none"
+          aria-label={T('voice.pick')}
+        >
+          {list.map((v) => (
+            <option key={v.uri} value={v.uri}>
+              {v.name}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <p className="text-[11px] leading-snug text-parch-dim">{T('voice.noVoice')}</p>
+      )}
+    </div>
+  );
+}
+
+function MoreMenu({ open, setOpen, room, lang, lowPower, toggleLow, showStage, toggleStage, openTutorial, voice, meId }) {
   const { T } = useLang();
   const [snd, setSnd] = useState({ sfx: 0.7, music: 0.35 });
   useEffect(() => {
@@ -407,7 +549,7 @@ function MoreMenu({ open, setOpen, room, lang, lowPower, toggleLow, showStage, t
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              className="absolute right-0 z-50 mt-2 w-72 rounded-xl border border-gold/20 bg-coal p-2 shadow-2xl"
+              className="scroll-thin absolute right-0 z-50 mt-2 max-h-[calc(100dvh-5rem)] w-80 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-xl border border-gold/20 bg-coal p-2 shadow-2xl"
             >
               <div className="flex items-center justify-between px-3 py-2">
                 <span className="text-xs text-parch-dim">{T('menu.lang')}</span>
@@ -423,6 +565,13 @@ function MoreMenu({ open, setOpen, room, lang, lowPower, toggleLow, showStage, t
                 <span className="w-14 shrink-0 text-parch-dim">{T('menu.sfx')}</span>
                 <input type="range" min={0} max={1} step={0.05} value={snd.sfx} onChange={(e) => setSoundPrefs({ sfx: +e.target.value })} className="w-full accent-[#f08a3c]" />
               </label>
+              <div className="my-1 border-t border-gold/10" />
+              <div className="space-y-3 px-3 py-1.5">
+                <DmModePicker room={room} isHost={room.hostId === meId} compact />
+                <DmStylePicker room={room} isHost={room.hostId === meId} compact />
+              </div>
+              <div className="my-1 border-t border-gold/10" />
+              <VoiceSettings voice={voice} room={room} />
               <div className="my-1 border-t border-gold/10" />
               <button className={item} onClick={toggleLow} title={T('game.saverTip')}>
                 <Gauge size={15} className={lowPower ? 'text-moss' : 'text-gold'} /> {lowPower ? T('game.saver') : T('game.full')}
@@ -529,10 +678,11 @@ function ActionBar({ room, me, isHost, pick }) {
         </button>
       </div>
     );
-  } else if (room.phase === 'narrating') {
+  } else if (room.phase === 'narrating' || room.phase === 'dmTurn') {
+    const dmName = room.players.find((p) => p.id === room.dmId)?.name;
     body = (
       <p className="flex items-center justify-center gap-2 py-3 font-display text-parch-dim">
-        <Feather size={18} className="glow-pulse text-ember" /> {T('act.narrating')}
+        <Feather size={18} className="glow-pulse text-ember" /> {room.phase === 'dmTurn' ? T('act.dmWriting', { name: dmName || 'DM' }) : T('act.narrating')}
       </p>
     );
   } else if (room.phase === 'stalled') {
@@ -617,14 +767,14 @@ function ActionBar({ room, me, isHost, pick }) {
       </div>
     );
   } else {
-    const targets = skill?.ally ? room.players.filter((p) => p.character).map((p) => ({ id: p.id, name: p.character.name })) : aliveEnemies.map((e) => ({ id: e.id, name: e.name, type: e.type }));
+    const targets = skill?.ally ? room.players.filter((p) => p.character && !(skill.id === 'aid' && p.id === me.id)).map((p) => ({ id: p.id, name: p.character.hp <= 0 ? `${p.character.name} · ${p.character.death?.dead ? T('party.dead') : T('party.down')}` : p.id === me.id ? `${p.character.name} ${T('common.you')}` : p.character.name })) : aliveEnemies.map((e) => ({ id: e.id, name: e.name, type: e.type }));
     body = (
       <div>
         <div className="scroll-thin mb-2 flex gap-1.5 overflow-x-auto pb-1">
           {mySkills.map((s) => {
             const cd = c.cooldowns?.[s.id] || 0;
             const active = skill?.id === s.id;
-            const Icon = s.id === 'potion' ? FlaskConical : Swords;
+            const Icon = s.id === 'potion' ? FlaskConical : s.id === 'aid' ? HandHeart : Swords;
             return (
               <button
                 key={s.id}
@@ -665,6 +815,11 @@ function ActionBar({ room, me, isHost, pick }) {
           </div>
         )}
         <div className="scroll-thin mb-2 flex gap-1.5 overflow-x-auto pb-1">
+          {(room.world?.choices || []).map((q) => (
+            <button key={`c-${q}`} onClick={() => setText(q)} title={T('act.choiceTip')} className="flex shrink-0 items-center gap-1 rounded-full border border-ember/50 bg-ember/10 px-3 py-1 text-xs text-parch transition hover:bg-ember/20">
+              <Signpost size={12} className="text-ember" /> {q}
+            </button>
+          ))}
           {QUICK.map((k) => T(k)).map((q) => (
             <button key={q} onClick={() => setText(q)} className="shrink-0 rounded-full border border-gold/15 bg-ink/60 px-3 py-1 text-xs text-parch-dim transition hover:border-ember/50 hover:text-parch">
               {q}

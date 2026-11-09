@@ -39,6 +39,50 @@ Main Dungeons & Dragons bareng teman langsung di browser. Host membuat room, tem
 - Party berangkat otomatis bila semua pemain memilih area yang sama, atau host memberangkatkannya langsung. Perjalanan tidak bisa dilakukan saat bertarung.
 - Setelah 2–3 pertempuran dimenangkan di sebuah area, host bisa menantang **bos area**. Bos tampil 2× lebih besar dengan aura dan bar HP di atas panggung. Mengalahkannya membuat area ditaklukkan dan memberi XP besar.
 
+### Dungeon Master: AI, manusia, atau manusia + AI
+
+Host memilih di lobby (bisa diganti kapan saja lewat menu **Lainnya**):
+
+- **AI**: Nemotron memimpin cerita.
+- **Manusia**: satu pemain menjadi DM (tombol *Aku ingin jadi Dungeon Master* saat membuat karakter, atau ikon pena di samping nama pemain). DM tidak butuh karakter dan mendapat **konsol DM**: menulis narasi, memunculkan/menghapus musuh, meminta lemparan (pemain, stat, DC), mengubah HP/gold/XP/item/gelar, mengatur latar, reputasi faksi, konsekuensi dunia, pilihan untuk pemain, misi, dan NPC (lengkap dengan rahasia yang hanya terlihat DM). Narasi juga bisa diselipkan kapan saja tanpa menunggu giliran. Dadu, skill, giliran musuh, dan death save tetap dihitung game.
+- **Manusia + AI**: seperti mode manusia, tapi setiap giliran Nemotron otomatis menyiapkan draf narasi plus perubahan dunia di konsol DM. DM tinggal mengedit lalu mengirim, atau meminta draf baru dengan arahan ("buat lebih lucu", "munculkan pengkhianat").
+- Jika DM manusia keluar, host bisa mengalihkan ke **AI** dan AI langsung melanjutkan giliran yang tertunda.
+
+### Dunia yang bereaksi (berdasarkan 10 kriteria campaign yang bagus)
+
+- **Faksi & reputasi**: setiap kampanye punya faksi (mis. *Mahkota Sawit*, *Pemberontak Akar Merah*, *Serikat Pedagang Bebas*, *Kuil Ibu Bumi*). Reputasi −100..+100 tampil sebagai bar di panel **Dunia** dan dipakai DM agar dunia bereaksi.
+- **Kronik dunia**: setiap keputusan penting dicatat sebagai konsekuensi permanen dan selalu diingat DM.
+- **NPC yang diingat**: nama, peran, sikap (ramah/netral/bermusuhan/tewas), catatan, dan rahasia (hanya untuk DM).
+- **Jurnal cerita**: misi bervariasi (utama, investigasi, politik, bertahan hidup, pencurian, misteri, dilema moral, perang, eksplorasi) dengan status aktif/selesai/gagal.
+- **Pilihan bercabang**: DM menawarkan 2–4 pilihan yang tampil sebagai tombol di atas kotak aksi; pemain tetap bebas menulis aksi lain.
+- **Gelar** sebagai hadiah (tampil di kartu karakter), selain gold dan item.
+- **Bos dengan fase & kelemahan**: di 50% HP bos mengamuk (+2 serangan, +2 damage) dan memanggil 2 pengawal. Tiap bos punya kelemahan rahasia (panah, api, petir, es, cahaya suci) yang memberi damage ×1,5; DM menebar petunjuknya lewat cerita.
+- **Kampanye baru: Tirani Kerajaan Sawit** (dark fantasy politik): raja tiran, pajak hasil panen, pemberontak, dan poster buronan dengan wajah kalian.
+- Prompt DM AI kini memuat prinsip: dunia hidup, alur 6 babak, villain dengan motif masuk akal, banyak jalan penyelesaian, dan konsekuensi nyata.
+
+### Kepribadian Dungeon Master (8 pilihan)
+
+Host memilihnya di lobby, dan bisa menggantinya kapan saja lewat menu **Lainnya** (berlaku mulai narasi berikutnya; semua pemain melihat pengumumannya). Default **Kocak**.
+
+| Pilihan | Rasa permainan |
+|---|---|
+| **Seimbang** | Tegang dengan sesekali momen lucu; tarung, jelajah, dan ngobrol seimbang |
+| **Kocak** | Humor dari situasi, NPC nyeleneh dengan running gag, callback ke tingkah pemain, natural 1 jadi slapstick. Diredam saat bos/teman sekarat |
+| **Petualang** | Peta harta, jalan rahasia, pemandangan baru, pilihan jalur, cliffhanger |
+| **Epik** | Takdir, ramalan, pidato membakar semangat, pertarungan legendaris |
+| **Serius** | Gelap dan keras, pilihan punya harga |
+| **Horor** | Merinding pelan-pelan, monster jarang terlihat utuh, tanpa gore berlebihan |
+| **Misteri** | Petunjuk yang adil, NPC berbohong, deduksi dihargai XP |
+| **Santai** | Cozy: festival desa, NPC ramah, tarung jarang dan ringan |
+
+Semua gaya melarang humor SARA, seksual, dan body shaming. Uji dengan Nemotron asli: `npm run dm:check -- id horor` (ganti dengan id gaya lain: `seimbang`, `kocak`, `petualang`, `epik`, `serius`, `horor`, `misteri`, `santai`).
+
+### Narasi suara & aksi ke teman
+
+- **Narasi suara gratis:** tombol **Narasi** di header membacakan narasi DM dengan suara bawaan perangkat (Web Speech API), tanpa API key, server, atau biaya. Suara mulai kalimat demi kalimat selagi DM masih menulis, musik otomatis mengecil saat narasi berbicara, dan setiap blok narasi punya tombol **Dengarkan** untuk diputar ulang. Teks tetap tampil, jadi bisa membaca, mendengar, atau keduanya. Kecepatan dan pilihan suara (per bahasa narasi) ada di menu **Lainnya**. Kualitas suara mengikuti perangkat: Chrome/Edge di Windows dan Android umumnya sudah punya suara Bahasa Indonesia dan Inggris.
+- **Bantu Teman** (semua kelas): target teman yang sekarat → stabilkan dengan lemparan WIS vs 10 (natural 20 = sadar dengan 1 HP); target teman yang sehat → serangan berikutnya dapat keuntungan (advantage). Klik teman di panggung untuk langsung memilihnya.
+- **Ramuan bisa diminumkan ke teman**, termasuk yang sekarat. Skill penyembuh otomatis mengarah ke teman yang paling terluka.
+
 ### Suara, tutorial, dan ekspor kisah
 
 - **Musik & efek suara prosedural** (WebAudio, tanpa file audio): musik ambient berbeda per biome yang berganti jadi tema tempur saat ada musuh, plus suara tebasan, sihir, kritis, dadu, koin, level up, misi selesai, death save. Audio baru aktif setelah klik pertama (aturan browser) dan berhenti saat tab disembunyikan. Volume musik dan efek diatur lewat menu **Lainnya**.
@@ -66,6 +110,22 @@ Main Dungeons & Dragons bareng teman langsung di browser. Host membuat room, tem
 - **Mode hemat** aktif otomatis di perangkat ≤2 core, RAM ≤2 GB, atau mode hemat data. Bisa diubah lewat tombol *Hemat / Grafis penuh*. Mode ini mematikan cuaca, partikel latar, blur, dan animasi CSS dekoratif. `prefers-reduced-motion` juga dihormati.
 
 Stack: Next.js 15 + Tailwind CSS 4 + Motion, Socket.IO, satu proses Node (UI + realtime di port yang sama).
+
+## Narasi suara natural dengan Piper (opsional, gratis)
+
+Secara default narasi memakai suara bawaan perangkat pemain. Jika CPU server cukup longgar, aktifkan [Piper](https://github.com/OHF-Voice/piper1-gpl) agar semua pemain mendengar suara yang sama dan lebih natural:
+
+```bash
+# di .env
+PIPER_URL=http://tts:5000
+
+docker compose --profile voice up -d --build
+```
+
+- Build pertama mengunduh suara `id_ID-news_tts-medium` dan `en_US-ryan-medium` (±150 MB). Ganti lewat `ARG VOICES` di `tts/Dockerfile` serta `PIPER_VOICE_ID` / `PIPER_VOICE_EN` di `.env`.
+- Kebutuhan: ±300 MB RAM, CPU biasa. Satu kalimat disintesis sekali lalu di-cache, dan permintaan yang sama dari banyak pemain digabung, jadi beban tidak bertambah per pemain.
+- Pemain bisa memilih mesin suara **Piper** atau **Perangkat** di menu **Lainnya**. Jika Piper gagal, kalimat itu otomatis dibacakan suara perangkat.
+- Cek lisensi tiap model suara di halaman model Piper sebelum dipakai untuk layanan komersial (beberapa suara, termasuk model Indonesia, hanya untuk penggunaan non-komersial).
 
 ## Cek Dungeon Master dengan Nemotron asli
 
@@ -121,6 +181,8 @@ Butuh Node.js 20+.
 | `MAX_ROOMS` | `300` | Jumlah room maksimum di server |
 | `ROOMS_PER_IP_HOUR` | `8` | Room baru maksimum per IP per jam |
 | `HOST_GRACE_MS` | `20000` | Lama host boleh terputus sebelum host dipindahkan |
+| `PIPER_URL` | (kosong) | URL server Piper, mis. `http://tts:5000`. Kosong = suara perangkat |
+| `PIPER_VOICE_ID` / `PIPER_VOICE_EN` | `id_ID-news_tts-medium` / `en_US-ryan-medium` | Suara Piper per bahasa narasi |
 
 > Pastikan ID model sama persis dengan yang tertera di halaman model build.nvidia.com (bagian contoh kode API).
 
@@ -163,6 +225,7 @@ lib/combat.js        mekanik tempur: d20 vs AC, dadu damage, kritis, status, gil
 lib/stage/engine.js  panggung pixel: aktor, pose, hit-stop, efek, latar per biome, lampu, mode hemat
 lib/stage/sprites.js monster sprite-kode (serigala, laba-laba, mimic, jamur, golem, naga)
 lib/sound.js         musik & efek suara prosedural (WebAudio)
+lib/voice.js         narasi suara (Web Speech API) + lib/useNarrator.js untuk membaca DM selagi streaming
 lib/exportStory.js   ekspor kisah ke HTML / cetak PDF
 scripts/dm-check.mjs uji koneksi & kualitas Nemotron asli (npm run dm:check)
 lib/pixelfx/         pustaka pixelfx (MIT, lihat LICENSE & NOTICE.md); rig.js sedikit dimodifikasi untuk pewarnaan per bagian tubuh

@@ -1,7 +1,7 @@
 'use client';
 import { motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Play, Shuffle, Sparkles } from 'lucide-react';
+import { Feather, Play, Shuffle, Sparkles } from 'lucide-react';
 import ClassIcon from './ClassIcon';
 import { CLASSES, CLASS_LOOK, HAIRSTYLES, LOOK, RACES, STATS, STAT_LABEL, WEAPON_LABEL, buildCharacter, defaultLook, fmtMod, skillsFor, totalMod } from '@/lib/data';
 import { emit } from '@/lib/client';
@@ -63,6 +63,19 @@ export default function CharacterCreator({ me, room, onDone }) {
         </p>
         <h1 className="gold-text mt-2 font-display text-4xl font-black sm:text-5xl">{T('cc.title')}</h1>
         <div className="mt-3 flex justify-center"><LangToggle /></div>
+        {room.hostId === me.id && room.phase === 'lobby' && (
+          <button
+            type="button"
+            onClick={async () => {
+              if (room.settings.dmMode === 'ai' || !room.settings.dmMode) await emit('room:settings', { dmMode: 'human' });
+              await emit('dm:seat', { to: me.id });
+              onDone?.();
+            }}
+            className="mx-auto mt-4 flex items-center gap-2 rounded-full border border-arcane/40 px-4 py-2 text-sm text-arcane hover:bg-arcane/10"
+          >
+            <Feather size={15} /> {room.dmId === me.id ? T('cc.stayDM') : T('cc.beDM')}
+          </button>
+        )}
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_400px]">

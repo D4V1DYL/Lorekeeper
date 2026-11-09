@@ -1,5 +1,5 @@
 'use client';
-import { Crown, UserX } from 'lucide-react';
+import { Crown, Feather, UserX } from 'lucide-react';
 import { emit } from '@/lib/client';
 import { useLang } from '@/lib/lang';
 
@@ -22,6 +22,20 @@ export default function HostControls({ room, me, player, className = '' }) {
       >
         <Crown size={12} />
       </button>
+      {room.settings.dmMode !== 'ai' && room.dmId !== player.id && (
+        <button
+          type="button"
+          title={T('host.makeDM')}
+          aria-label={T('host.makeDM')}
+          onClick={(e) => {
+            e.stopPropagation();
+            emit('dm:seat', { to: player.id });
+          }}
+          className="rounded-full border border-arcane/30 p-1.5 text-arcane hover:bg-arcane/10"
+        >
+          <Feather size={12} />
+        </button>
+      )}
       <button
         type="button"
         title={T('host.kick')}

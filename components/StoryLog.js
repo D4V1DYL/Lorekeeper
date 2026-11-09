@@ -1,7 +1,8 @@
 'use client';
 import { AnimatePresence, motion } from 'motion/react';
-import { Fragment, memo, useEffect, useLayoutEffect, useRef } from 'react';
-import { Dices, MessageCircle } from 'lucide-react';
+import { Fragment, memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Dices, MessageCircle, Square, Volume2 } from 'lucide-react';
+import { onVoice, speak, stopSpeaking, ttsSupported } from '@/lib/voice';
 import { CLASSES, fmtMod } from '@/lib/data';
 import { useLang } from '@/lib/lang';
 
@@ -34,13 +35,41 @@ function Narration({ text, streaming }) {
   );
 }
 
-const Entry = memo(function Entry({ e, colorOf }) {
+/** Tombol dengarkan per narasi: bisa membaca, bisa juga mendengar. */
+function Listen({ e, lang }) {
+  const { T } = useLang();
+  const [speaking, setSpeaking] = useState(null);
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    setOk(ttsSupported());
+    return onVoice((p) => setSpeaking(p.speakingId));
+  }, []);
+  if (!ok || e.streaming || !e.text) return null;
+  const on = speaking === e.id;
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        stopSpeaking();
+        if (!on) speak(e.text, { lang, id: e.id });
+      }}
+      title={on ? T('voice.stop') : T('voice.listen')}
+      aria-label={on ? T('voice.stop') : T('voice.listen')}
+      className={`absolute -top-3 right-4 flex items-center gap-1 rounded-full border bg-ink px-2 py-0.5 text-[11px] ${on ? 'border-ember text-ember' : 'border-gold/30 text-parch-dim hover:text-gold'}`}
+    >
+      {on ? <Square size={10} /> : <Volume2 size={12} />} {on ? T('voice.stop') : T('voice.listen')}
+    </button>
+  );
+}
+
+const Entry = memo(function Entry({ e, colorOf, lang }) {
   const { T } = useLang();
   switch (e.type) {
     case 'dm':
       return (
         <article className="relative rounded-2xl border border-gold/15 bg-gradient-to-b from-[#1d1713]/90 to-[#14100d]/90 px-5 py-5 shadow-[0_20px_50px_-30px_black] sm:px-7">
           <span className="absolute -top-2.5 left-5 rounded-full border border-gold/30 bg-ink px-2.5 py-0.5 font-display text-[10px] tracking-[0.3em] text-gold uppercase">{T('log.dm')}</span>
+          <Listen e={e} lang={lang} />
           <Narration text={e.text} streaming={e.streaming} />
         </article>
       );
@@ -120,7 +149,7 @@ const Entry = memo(function Entry({ e, colorOf }) {
   }
 });
 
-export default function StoryLog({ log, players }) {
+export default function StoryLog({ log, players, lang = 'id' }) {
   const ref = useRef(null);
   const stick = useRef(true);
   const colorOf = (name) => {
@@ -148,7 +177,7 @@ export default function StoryLog({ log, players }) {
         <AnimatePresence initial={false}>
           {log.map((e) => (
             <motion.div key={e.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-              <Entry e={e} colorOf={colorOf} />
+              <Entry e={e} colorOf={colorOf} lang={lang} />
             </motion.div>
           ))}
         </AnimatePresence>

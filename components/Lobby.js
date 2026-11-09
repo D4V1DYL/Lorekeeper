@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { Check, Copy, Crown, KeyRound, Link as LinkIcon, Lock, Play, Wifi, WifiOff } from 'lucide-react';
 import HostControls from './HostControls';
+import DmStylePicker, { DmModePicker } from './DmStylePicker';
 import { Sigil } from './ClassIcon';
 import ChatPanel from './ChatPanel';
 import { CAMPAIGNS, CLASSES, RACES } from '@/lib/data';
@@ -33,8 +34,8 @@ export default function Lobby({ room, me, isHost, onEditChar }) {
   };
 
   const setSetting = (patch) => emit('room:settings', patch);
-  const ready = room.players.filter((p) => p.character).length;
-  const waiting = room.players.filter((p) => !p.character);
+  const ready = room.players.filter((p) => p.character && p.id !== room.dmId).length;
+  const waiting = room.players.filter((p) => !p.character && p.id !== room.dmId);
 
   async function start() {
     setError('');
@@ -86,7 +87,13 @@ export default function Lobby({ room, me, isHost, onEditChar }) {
                     {p.id === me.id && <span className="text-xs font-normal text-parch-dim">{T('common.you')}</span>}
                   </p>
                   <p className="text-xs text-parch-dim">
-                    {p.character ? `${D.race(p.character.raceId, RACES[p.character.raceId].label)} ${CLASSES[p.character.classId].label} · ${p.character.maxHp} HP · AC ${p.character.ac}` : T('lobby.making')}
+                    {p.id === room.dmId ? (
+                      <span className="text-arcane">{T('party.dm')}</span>
+                    ) : p.character ? (
+                      `${D.race(p.character.raceId, RACES[p.character.raceId].label)} ${CLASSES[p.character.classId].label} · ${p.character.maxHp} HP · AC ${p.character.ac}`
+                    ) : (
+                      T('lobby.making')
+                    )}
                   </p>
                 </div>
                 <HostControls room={room} me={me} player={p} />
@@ -152,6 +159,13 @@ export default function Lobby({ room, me, isHost, onEditChar }) {
               </button>
             ))}
           </div>
+          <DmModePicker room={room} isHost={isHost} />
+          {isHost && room.dmId && room.dmId !== me.id && (
+            <button onClick={() => emit('dm:seat', { to: me.id })} className="mt-1.5 text-xs text-arcane underline-offset-4 hover:underline">
+              {T('dmMode.takeSeat')}
+            </button>
+          )}
+          <DmStylePicker room={room} isHost={isHost} />
 
           <div className="mt-4">
             <p className="flex items-center gap-1.5 text-xs font-semibold tracking-widest text-parch-dim uppercase">
@@ -187,7 +201,7 @@ export default function Lobby({ room, me, isHost, onEditChar }) {
 
           <div className="rune-divider my-5" />
           <p className="text-xs text-parch-dim">
-            Dungeon Master: <span className={room.dm.mock ? 'text-gold' : 'text-moss'}>{room.dm.mock ? T('lobby.dmDemo') : room.dm.model}</span>
+            {room.dmId ? T('lobby.dmAssistModel') : 'Dungeon Master'}: <span className={room.dm.mock ? 'text-gold' : 'text-moss'}>{room.dm.mock ? T('lobby.dmDemo') : room.dm.model}</span>
           </p>
 
           {isHost ? (
