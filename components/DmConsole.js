@@ -1,9 +1,11 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import { Bot, Dices, Eye, FastForward, Feather, Globe2, Loader2, Plus, ScrollText, Send, Skull, Swords, Trash2, Users, X } from 'lucide-react';
+import { MessageSquareQuote, Shuffle, Bot, Dices, Eye, FastForward, Feather, Globe2, Loader2, Plus, ScrollText, Send, Skull, Swords, Trash2, Users, X } from 'lucide-react';
 import { BIOMES, ENEMY_TYPES, STATS } from '@/lib/data';
 import { emit, getSocket } from '@/lib/client';
 import { useLang } from '@/lib/lang';
+import { randomNpc } from '@/lib/names';
+import NpcAvatar from './NpcAvatar';
 
 const QTYPES = ['main', 'investigation', 'political', 'survival', 'heist', 'mystery', 'moral', 'war', 'exploration', 'side'];
 const input = 'min-w-0 rounded-md border border-gold/20 bg-ink/80 px-2 py-1 text-xs outline-none focus:border-ember/60';
@@ -129,6 +131,15 @@ export default function DmConsole({ room, me, isHost }) {
         placeholder={myTurn ? T('dmc.ph') : T('dmc.phInterject')}
         className="scroll-thin w-full resize-y rounded-xl border border-gold/20 bg-ink/80 px-3 py-2 font-story text-lg leading-snug outline-none focus:border-ember/60"
       />
+      <SpeakerBar
+        room={room}
+        T={T}
+        onInsert={(name, role) => {
+          setText((t) => `${t.replace(/\s+$/, '')}${t.trim() ? '\n' : ''}>> ${name}: `);
+          // NPC baru langsung dicatat beserta perannya agar avatarnya sesuai
+          if (role && !(room.world?.npcs || []).some((n) => n.name === name)) setSt((o) => ({ ...o, npcs: [...(o.npcs || []).filter((n) => n.name !== name), { name, role, attitude: 'neutral' }] }));
+        }}
+      />
 
       <div className="flex flex-wrap items-center gap-1.5">
         {TABS.map(([id, Icon, label]) => (
@@ -179,6 +190,41 @@ export default function DmConsole({ room, me, isHost }) {
           {tab === 'secret' && <SecretTool secrets={secrets} T={T} />}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Sisipkan baris dialog NPC (">> Nama: ") ke narasi; ada pembuat nama acak untuk NPC baru. */
+function SpeakerBar({ room, T, onInsert }) {
+  const npcs = room.world?.npcs || [];
+  const [name, setName] = useState('');
+  const [role, setRole] = useState('');
+  const info = npcs.find((n) => n.name.toLowerCase() === name.trim().toLowerCase());
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-xs">
+      <MessageSquareQuote size={13} className="text-gold" />
+      {name.trim() && <NpcAvatar name={name.trim()} role={info?.role || role} attitude={info?.attitude} size={22} />}
+      <input list="dm-npc-names" value={name} onChange={(e) => setName(e.target.value)} maxLength={36} placeholder={T('dmc.speaker')} className={`${input} w-36`} />
+      <datalist id="dm-npc-names">
+        {npcs.map((n) => (
+          <option key={n.name} value={n.name} />
+        ))}
+      </datalist>
+      {!info && <input value={role} onChange={(e) => setRole(e.target.value)} maxLength={48} placeholder={T('dmc.npcRole')} className={`${input} w-28`} />}
+      <button
+        className={chip}
+        title={T('dmc.randomName')}
+        onClick={() => {
+          const r = randomNpc(room.settings.language);
+          setName(r.name);
+          setRole(r.role);
+        }}
+      >
+        <Shuffle size={11} />
+      </button>
+      <button className={`${chip} flex items-center gap-1`} disabled={!name.trim()} onClick={() => onInsert(name.trim(), info ? '' : role.trim())}>
+        <Plus size={11} /> {T('dmc.insertLine')}
+      </button>
     </div>
   );
 }
@@ -449,6 +495,9 @@ function WorldTool({ room, st, set, bump, T, D }) {
         <p className="mb-1 font-semibold text-parch-dim">{T('world.npcs')}</p>
         <div className="flex flex-wrap gap-1.5">
           <input value={npc.name} onChange={(e) => setNpc({ ...npc, name: e.target.value })} maxLength={36} placeholder={T('dmc.npcName')} className={`${input} w-28`} />
+          <button className={chip} title={T('dmc.randomName')} onClick={() => setNpc({ ...npc, ...randomNpc(room.settings.language) })}>
+            <Shuffle size={11} />
+          </button>
           <input value={npc.role} onChange={(e) => setNpc({ ...npc, role: e.target.value })} maxLength={48} placeholder={T('dmc.npcRole')} className={`${input} w-28`} />
           <select value={npc.attitude} onChange={(e) => setNpc({ ...npc, attitude: e.target.value })} className={input}>
             {['friendly', 'neutral', 'hostile', 'dead'].map((a) => (

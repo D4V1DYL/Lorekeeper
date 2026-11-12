@@ -60,6 +60,18 @@ Host memilih di lobby (bisa diganti kapan saja lewat menu **Lainnya**):
 - **Kampanye baru: Tirani Kerajaan Sawit** (dark fantasy politik): raja tiran, pajak hasil panen, pemberontak, dan poster buronan dengan wajah kalian.
 - Prompt DM AI kini memuat prinsip: dunia hidup, alur 6 babak, villain dengan motif masuk akal, banyak jalan penyelesaian, dan konsekuensi nyata.
 
+### NPC bernama dengan avatar sendiri
+
+- DM (AI maupun manusia) menulis dialog NPC di baris tersendiri: `>> Mbok Sarni: Mampir dulu, Nak!`. Di log cerita, narasi tetap di kartu DM, sedangkan dialog NPC tampil sebagai gelembung chat terpisah dengan **avatar piksel** NPC itu.
+- Avatar digambar otomatis dari nama + peran (tanpa file gambar): raja bermahkota, prajurit berhelm, penyihir bertopi runcing, pencuri berkerudung, pedagang bertopi, tetua berjenggot putih, goblin berkulit hijau, makhluk mayat pucat. Warna cincin = sikap NPC (hijau ramah, emas netral, merah bermusuhan, abu-abu tewas). Nama yang sama selalu berwajah sama.
+- AI wajib memberi setiap NPC nama khas (bukan "si penjaga") dan mencatat perannya; NPC yang bicara otomatis masuk daftar **NPC yang dikenal**.
+- Konsol DM manusia punya tombol **Sisipkan dialog** dan pembuat **nama & peran acak**.
+- Chat tim juga menampilkan avatar pemain (sigil kelas).
+
+### Panjang narasi
+
+Host bisa memilih **Singkat** (default, maks ±70 kata), **Sedang** (±130 kata), atau **Panjang** (2–4 paragraf) di lobby atau menu **Lainnya**, kapan saja. Mode singkat menyuruh DM langsung ke inti dan tidak mengulang angka mekanik yang sudah tampil di log. Musuh yang muncul bersamaan juga digabung jadi satu baris log.
+
 ### Kepribadian Dungeon Master (8 pilihan)
 
 Host memilihnya di lobby, dan bisa menggantinya kapan saja lewat menu **Lainnya** (berlaku mulai narasi berikutnya; semua pemain melihat pengumumannya). Default **Kocak**.

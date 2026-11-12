@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { Check, Copy, Crown, KeyRound, Link as LinkIcon, Lock, Play, Wifi, WifiOff } from 'lucide-react';
 import HostControls from './HostControls';
-import DmStylePicker, { DmModePicker } from './DmStylePicker';
+import DmStylePicker, { DmModePicker, LengthPicker } from './DmStylePicker';
 import { Sigil } from './ClassIcon';
 import ChatPanel from './ChatPanel';
 import { CAMPAIGNS, CLASSES, RACES } from '@/lib/data';
@@ -166,6 +166,7 @@ export default function Lobby({ room, me, isHost, onEditChar }) {
             </button>
           )}
           <DmStylePicker room={room} isHost={isHost} />
+          <LengthPicker room={room} isHost={isHost} />
 
           <div className="mt-4">
             <p className="flex items-center gap-1.5 text-xs font-semibold tracking-widest text-parch-dim uppercase">

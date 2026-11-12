@@ -5,6 +5,8 @@ import { Dices, MessagesSquare, Send, Target } from 'lucide-react';
 import { CLASSES, fmtMod, skillsFor } from '@/lib/data';
 import { emit, getSocket } from '@/lib/client';
 import { useLang } from '@/lib/lang';
+import { Sigil } from './ClassIcon';
+import NpcAvatar from './NpcAvatar';
 
 /**
  * Chat tim (di luar cerita, tidak dibaca DM). Ada rencana tim, pesan cepat, indikator mengetik, dan /roll.
@@ -130,8 +132,10 @@ export default function ChatPanel({ room, me, className = '' }) {
         <AnimatePresence initial={false}>
           {room.chat.map((m) => {
             const mine = m.pid === me.id;
+            const who = room.players.find((x) => x.id === m.pid);
             return (
-              <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+              <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className={`flex items-end gap-1.5 ${mine ? 'justify-end' : 'justify-start'}`}>
+                {!mine && (who?.character ? <Sigil character={who.character} size={26} /> : <NpcAvatar name={m.author || '?'} role={who?.id === room.dmId ? 'penyihir' : ''} size={26} />)}
                 <div className={`max-w-[88%] rounded-xl px-2.5 py-1.5 text-sm ${mine ? 'rounded-br-sm bg-ember/15' : 'rounded-bl-sm bg-ink/70'} ${m.quick ? 'border border-gold/25' : ''}`}>
                   {!mine && (
                     <p className="text-[10px] font-bold" style={{ color: colorOf(m.pid) }}>

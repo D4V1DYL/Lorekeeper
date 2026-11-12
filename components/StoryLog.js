@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Fragment, memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Dices, MessageCircle, Square, Volume2 } from 'lucide-react';
 import { onVoice, speak, stopSpeaking, ttsSupported } from '@/lib/voice';
+import { splitNarration } from '@/lib/npcLines';
+import NpcAvatar from './NpcAvatar';
 import { CLASSES, fmtMod } from '@/lib/data';
 import { useLang } from '@/lib/lang';
 
@@ -16,7 +18,7 @@ function inline(text) {
   });
 }
 
-function Narration({ text, streaming }) {
+function Narration({ text, streaming, dropcap = true }) {
   const { T } = useLang();
   const paras = String(text || '')
     .replace(/^#+\s*/gm, '')
@@ -24,7 +26,7 @@ function Narration({ text, streaming }) {
     .map((p) => p.trim())
     .filter(Boolean);
   return (
-    <div className="dropcap space-y-3 font-story text-[1.2rem] leading-relaxed text-parch/95 sm:text-[1.3rem]">
+    <div className={`${dropcap ? 'dropcap ' : ''}space-y-3 font-story text-[1.2rem] leading-relaxed text-parch/95 sm:text-[1.3rem]`}>
       {paras.length === 0 && streaming && <p className="glow-pulse text-parch-dim italic">{T('log.inking')}</p>}
       {paras.map((p, i) => (
         <p key={i} className={streaming && i === paras.length - 1 ? 'caret' : ''}>
@@ -62,17 +64,50 @@ function Listen({ e, lang }) {
   );
 }
 
-const Entry = memo(function Entry({ e, colorOf, lang }) {
+const Entry = memo(function Entry({ e, colorOf, lang, npcs = [] }) {
   const { T } = useLang();
   switch (e.type) {
-    case 'dm':
+    case 'dm': {
+      // narasi di kartu DM, dialog NPC jadi gelembung chat dengan avatar sendiri
+      const parts = splitNarration(e.text, e.streaming);
+      if (!parts.length) parts.push({ kind: 'narr', text: '' });
+      let first = true;
       return (
-        <article className="relative rounded-2xl border border-gold/15 bg-gradient-to-b from-[#1d1713]/90 to-[#14100d]/90 px-5 py-5 shadow-[0_20px_50px_-30px_black] sm:px-7">
-          <span className="absolute -top-2.5 left-5 rounded-full border border-gold/30 bg-ink px-2.5 py-0.5 font-display text-[10px] tracking-[0.3em] text-gold uppercase">{T('log.dm')}</span>
-          <Listen e={e} lang={lang} />
-          <Narration text={e.text} streaming={e.streaming} />
-        </article>
+        <div className="space-y-3">
+          {parts.map((s, i) => {
+            const last = i === parts.length - 1;
+            if (s.kind === 'npc') {
+              const info = npcs.find((n) => n.name.toLowerCase() === s.name.toLowerCase()) || {};
+              return (
+                <div key={i} className="flex items-end gap-2.5 pr-8">
+                  <NpcAvatar name={s.name} role={info.role} attitude={info.attitude} size={40} />
+                  <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-gold/20 bg-[#221a14] px-4 py-2.5">
+                    <p className="flex items-center gap-1.5 font-display text-xs font-bold tracking-wider text-gold">
+                      {s.name}
+                      {info.role && <span className="font-sans text-[10px] font-normal tracking-normal text-parch-dim">· {info.role}</span>}
+                    </p>
+                    <p className={`font-story text-lg leading-snug text-parch ${e.streaming && last ? 'caret' : ''}`}>“{s.text}”</p>
+                  </div>
+                </div>
+              );
+            }
+            const head = first;
+            first = false;
+            return (
+              <article key={i} className="relative rounded-2xl border border-gold/15 bg-gradient-to-b from-[#1d1713]/90 to-[#14100d]/90 px-5 py-5 shadow-[0_20px_50px_-30px_black] sm:px-7">
+                {head && (
+                  <>
+                    <span className="absolute -top-2.5 left-5 rounded-full border border-gold/30 bg-ink px-2.5 py-0.5 font-display text-[10px] tracking-[0.3em] text-gold uppercase">{T('log.dm')}</span>
+                    <Listen e={e} lang={lang} />
+                  </>
+                )}
+                <Narration text={s.text} streaming={e.streaming && last} dropcap={head} />
+              </article>
+            );
+          })}
+        </div>
       );
+    }
     case 'action':
       return (
         <div className="flex justify-end">
@@ -149,7 +184,7 @@ const Entry = memo(function Entry({ e, colorOf, lang }) {
   }
 });
 
-export default function StoryLog({ log, players, lang = 'id' }) {
+export default function StoryLog({ log, players, lang = 'id', npcs = [] }) {
   const ref = useRef(null);
   const stick = useRef(true);
   const colorOf = (name) => {
@@ -177,7 +212,7 @@ export default function StoryLog({ log, players, lang = 'id' }) {
         <AnimatePresence initial={false}>
           {log.map((e) => (
             <motion.div key={e.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-              <Entry e={e} colorOf={colorOf} lang={lang} />
+              <Entry e={e} colorOf={colorOf} lang={lang} npcs={npcs} />
             </motion.div>
           ))}
         </AnimatePresence>

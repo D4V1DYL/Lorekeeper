@@ -64,7 +64,8 @@ async function run(label, trigger) {
   const p = parseDM(raw);
   console.log(`\n— ${label} —`);
   console.log(`${ok(first && first < 8000)} Kata pertama: ${first ? `${(first / 1000).toFixed(1)} s` : '-'} · selesai: ${(ms / 1000).toFixed(1)} s`);
-  console.log(`${ok(p.narration.length > 80)} Narasi: ${p.narration.length} karakter`);
+  const words = p.narration.split(/\s+/).filter(Boolean).length;
+  console.log(`${ok(p.narration.length > 80 && words <= 95)} Narasi: ${words} kata (target singkat ≤ 70), ${p.narration.length} karakter`);
   console.log(`${ok(p.ok)} Blok [[STATE]] ${p.ok ? 'valid' : 'TIDAK valid'}${p.ok ? ` · field: ${Object.keys(p.state).join(', ')}` : ''}`);
   const idWords = (p.narration.match(/\b(yang|dan|kalian|dengan|tidak)\b/gi) || []).length;
   const enWords = (p.narration.match(/\b(the|and|you|with|your)\b/gi) || []).length;

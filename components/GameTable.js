@@ -11,7 +11,7 @@ import LangToggle from './LangToggle';
 import ShopPanel from './ShopPanel';
 import DmConsole from './DmConsole';
 import WorldPanel from './WorldPanel';
-import { DmModePicker } from './DmStylePicker';
+import { DmModePicker, LengthPicker } from './DmStylePicker';
 import DmStylePicker from './DmStylePicker';
 import HostControls from './HostControls';
 import Tutorial, { tutorialSeen } from './Tutorial';
@@ -181,7 +181,7 @@ export default function GameTable({ room, me, isHost }) {
             </div>
           </div>
           <div className="min-h-0 flex-1">
-            <StoryLog log={room.log} players={room.players} lang={room.settings.language} />
+            <StoryLog log={room.log} players={room.players} lang={room.settings.language} npcs={room.world?.npcs || []} />
           </div>
           {isDM ? (
             <footer className="shrink-0 border-t border-gold/10 bg-coal/85 px-3 py-3 sm:px-5">
@@ -569,6 +569,7 @@ function MoreMenu({ open, setOpen, room, lang, lowPower, toggleLow, showStage, t
               <div className="space-y-3 px-3 py-1.5">
                 <DmModePicker room={room} isHost={room.hostId === meId} compact />
                 <DmStylePicker room={room} isHost={room.hostId === meId} compact />
+                <LengthPicker room={room} isHost={room.hostId === meId} />
               </div>
               <div className="my-1 border-t border-gold/10" />
               <VoiceSettings voice={voice} room={room} />

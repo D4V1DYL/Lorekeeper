@@ -83,3 +83,27 @@ export function DmModePicker({ room, isHost, compact = false }) {
     </div>
   );
 }
+
+/** Panjang narasi DM. Default Singkat supaya pemain tidak malas membaca. */
+export function LengthPicker({ room, isHost }) {
+  const { T } = useLang();
+  const cur = room.settings.length || 'singkat';
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+      <span className="text-sm text-parch-dim">{T('len.label')}</span>
+      {['singkat', 'sedang', 'panjang'].map((l) => (
+        <button
+          key={l}
+          type="button"
+          disabled={!isHost}
+          aria-pressed={cur === l}
+          onClick={() => emit('room:settings', { length: l })}
+          title={T(`len.${l}Tip`)}
+          className={`rounded-full border px-3 py-1 disabled:cursor-default ${cur === l ? 'border-ember text-ember' : 'border-gold/20 text-parch-dim'}`}
+        >
+          {T(`len.${l}`)}
+        </button>
+      ))}
+    </div>
+  );
+}
